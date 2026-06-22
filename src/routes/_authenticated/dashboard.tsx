@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Plus, LogOut, Settings, User as UserIcon, ExternalLink } from "lucide-react";
+import { Plus, LogOut, Settings, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { Navbar as _Navbar } from "@/components/navbar"; // unused intentionally
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
