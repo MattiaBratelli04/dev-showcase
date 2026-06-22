@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          github_url: string | null
+          id: string
+          linkedin_url: string | null
+          name: string
+          tech_stack: string[]
+          updated_at: string
+          username: string
+          website_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          github_url?: string | null
+          id: string
+          linkedin_url?: string | null
+          name?: string
+          tech_stack?: string[]
+          updated_at?: string
+          username: string
+          website_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          github_url?: string | null
+          id?: string
+          linkedin_url?: string | null
+          name?: string
+          tech_stack?: string[]
+          updated_at?: string
+          username?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          fake_data: boolean
+          id: string
+          is_public: boolean
+          project_url: string | null
+          screenshot_url: string | null
+          tech_stack: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string
+          fake_data?: boolean
+          id?: string
+          is_public?: boolean
+          project_url?: string | null
+          screenshot_url?: string | null
+          tech_stack?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          fake_data?: boolean
+          id?: string
+          is_public?: boolean
+          project_url?: string | null
+          screenshot_url?: string | null
+          tech_stack?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
