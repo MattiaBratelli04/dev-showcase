@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
+import { Link, redirect } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Code2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -9,6 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) throw redirect({ to: "/explore" });
+  },
   head: () => ({
     meta: [
       { title: "DevShelf — Showcase your projects like a pro" },
