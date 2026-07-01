@@ -2,7 +2,15 @@
 
 ## 1. Panoramica tecnica
 
-DevShelf è un'applicazione full-stack costruita su **Next.js 14** con App Router. Il backend è interamente gestito tramite API Routes di Next.js, il database è **PostgreSQL** gestito via **Prisma ORM**, e l'autenticazione usa **NextAuth.js v5**.
+DevShelf è un'applicazione full-stack costruita su **Next.js 16** con App Router. Backend e frontend convivono nello stesso progetto: le API sono Route Handler di Next.js sotto `app/api/`, il database è **PostgreSQL** gestito via **Prisma ORM 7**, e l'autenticazione usa **NextAuth.js v5**.
+
+Il codice è organizzato in tre macro-aree (vedi anche `backend/README.md` e `frontend/README.md`):
+
+```
+app/         → routing Next.js: pagine + api routes (obbligatorio qui, non spostabile)
+backend/     → Prisma schema/migrations, client DB, config NextAuth
+frontend/    → componenti UI, helper client-side
+```
 
 ---
 
@@ -10,95 +18,96 @@ DevShelf è un'applicazione full-stack costruita su **Next.js 14** con App Route
 
 | Livello | Tecnologia | Versione |
 |---------|-----------|---------|
-| Framework | Next.js | 14.x |
+| Framework | Next.js (App Router) | 16.2.9 |
 | Linguaggio | TypeScript | 5.x |
-| Styling | Tailwind CSS | 3.x |
-| Componenti UI | Shadcn/ui | latest |
-| Animazioni | Framer Motion | 11.x |
-| ORM | Prisma | 5.x |
-| Database | PostgreSQL | 15+ |
-| Autenticazione | NextAuth.js | 5.x (beta) |
-| Upload file | Uploadthing | 7.x |
+| UI | React | 19.2.4 |
+| Styling | Tailwind CSS | 4.x |
+| Animazioni | Framer Motion | 12.x |
+| Icone | lucide-react | 1.x |
+| ORM | Prisma | 7.8.0 |
+| Driver DB | `pg` + `@prisma/adapter-pg` | 8.x / 7.8.0 |
+| Database | PostgreSQL | 16 (Docker locale) |
+| Autenticazione | NextAuth.js | 5.0.0-beta.31 |
 | Validazione | Zod | 3.x |
 | Form | React Hook Form | 7.x |
-| Deploy | Vercel | — |
-| DB hosting | Neon / Supabase | — |
+| Hash password | bcryptjs | 3.x |
+
+> **Nota su Prisma 7:** rispetto alle versioni precedenti, la `datasource.url` **non va più messa nello schema** (`schema.prisma`). La connessione si configura in due punti separati: `prisma.config.ts` (usato dalla CLI per migration/generate/studio) e `backend/lib/prisma.ts` (usato dall'app a runtime, tramite un **driver adapter** — `@prisma/adapter-pg` — invece del motore Rust integrato delle versioni precedenti).
+
+Upload immagini e OAuth Google sono **predisposti ma non ancora integrati**: `uploadthing`/`@uploadthing/react` sono installati e `.env.example` prevede le chiavi, ma nessuna route li usa davvero; `backend/lib/auth.ts` ha solo `CredentialsProvider` (login email+password), non `GoogleProvider`.
 
 ---
 
 ## 3. Prerequisiti
 
-- Node.js >= 18.17
-- npm >= 9 (o pnpm/yarn)
-- PostgreSQL >= 15 installato localmente oppure account Neon/Supabase
-- Account Uploadthing (gratuito) per l'upload immagini
-- (Opzionale) Account Google per OAuth
+- Node.js 20+ (sviluppato e testato su v20.19.5)
+- npm
+- Docker (per Postgres locale) — in alternativa un'istanza Postgres 14+ raggiungibile
 
 ---
 
 ## 4. Setup ambiente di sviluppo
 
-### 4.1 Clonare il repository
+### 4.1 Clonare e installare
 
 ```bash
-git clone https://github.com/tuousername/devshelf.git
-cd devshelf
+git clone <repo>
+cd portfolioJac
 npm install
 ```
 
-### 4.2 Variabili d'ambiente
+### 4.2 Database Postgres locale (Docker)
 
-Crea un file `.env` nella root del progetto:
+```bash
+docker run -d --name devshelf-postgres \
+  -e POSTGRES_USER=devshelf \
+  -e POSTGRES_PASSWORD=devshelf \
+  -e POSTGRES_DB=devshelf \
+  -p 5432:5432 \
+  -v devshelf-postgres-data:/var/lib/postgresql/data \
+  postgres:16-alpine
+```
+
+Le esecuzioni successive bastano con:
+```bash
+docker start devshelf-postgres
+```
+
+### 4.3 Variabili d'ambiente
+
+Copia `.env.example` in `.env` e compila almeno:
 
 ```env
-# Database
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/devshelf"
-
-# NextAuth
-NEXTAUTH_SECRET="genera-con-openssl-rand-base64-32"
+DATABASE_URL="postgresql://devshelf:devshelf@localhost:5432/devshelf"
+NEXTAUTH_SECRET="<openssl rand -base64 32>"
 NEXTAUTH_URL="http://localhost:3000"
-
-# Google OAuth (opzionale)
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-
-# Uploadthing
-UPLOADTHING_SECRET=""
-UPLOADTHING_APP_ID=""
 ```
 
-Per generare `NEXTAUTH_SECRET`:
-```bash
-openssl rand -base64 32
-```
+`UPLOADTHING_*` e `GOOGLE_CLIENT_*` sono opzionali/non ancora usati (vedi nota sopra).
 
-### 4.3 Setup database
+### 4.4 Migration e client Prisma
 
 ```bash
-# Crea il database (se in locale)
-createdb devshelf
-
-# Applica lo schema Prisma
-npx prisma migrate dev --name init
-
-# (Opzionale) Seed con dati di test
-npx prisma db seed
+npx prisma migrate dev   # crea/applica le migration in backend/prisma/migrations
+npx prisma generate      # rigenera il client (fatto automaticamente da migrate dev)
 ```
 
-### 4.4 Avviare il server di sviluppo
+> La primissima invocazione della CLI Prisma su una macchina nuova può richiedere 2-3 minuti a freddo (carica una libreria interna pesante, `effect`) — non è un blocco, le esecuzioni successive sono quasi istantanee (grazie alla cache del filesystem).
+
+### 4.5 Avviare il server di sviluppo
 
 ```bash
 npm run dev
 ```
 
-L'app sarà disponibile su `http://localhost:3000`.
+App su `http://localhost:3000`.
 
 ---
 
 ## 5. Schema del database
 
 ```prisma
-// prisma/schema.prisma
+// backend/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -106,27 +115,29 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // niente url qui in Prisma 7 — vedi prisma.config.ts
 }
 
 model User {
-  id          String    @id @default(cuid())
-  name        String
-  username    String    @unique
-  email       String    @unique
-  password    String?   // null se login OAuth
-  bio         String?
-  avatarUrl   String?
-  githubUrl   String?
-  linkedinUrl String?
-  websiteUrl  String?
-  techStack   String[]  // array di tag
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  name          String
+  username      String    @unique
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  bio           String?
+  image         String?
+  githubUrl     String?
+  linkedinUrl   String?
+  websiteUrl    String?
+  techStack     String[]
+  isPublic      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  projects    Project[]
-  sessions    Session[]
-  accounts    Account[]
+  projects Project[]
+  accounts Account[]
+  sessions Session[]
 }
 
 model Project {
@@ -138,537 +149,215 @@ model Project {
   techStack     String[]
   category      String?
   isPublic      Boolean  @default(false)
-  fakeData      Json?    // overlay dati fittizi
+  fakeData      Boolean  @default(false)   // interruttore "mostra banner dati fittizi"
+  fakeDataItems Json?                      // futuro: lista dettagliata dei valori sostituiti
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Tabelle necessarie per NextAuth
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+// Account, Session: tabelle standard richieste dall'adapter Prisma di NextAuth.
+model Account { /* ... */ }
+model Session { /* ... */ }
 
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
+// VerificationToken: tabella standard NextAuth (pensata per magic-link email),
+// riusata anche per i token di reset password (vedi §7 "Reset password").
+model VerificationToken { /* ... */ }
 ```
+
+Schema completo in `backend/prisma/schema.prisma`. Vedi anche `docs/architettura-sistema.md` per il diagramma ER e il dizionario dati.
 
 ---
 
 ## 6. Struttura delle cartelle
 
 ```
-devshelf/
-├── app/
-│   ├── layout.tsx                  # Root layout con providers
-│   ├── page.tsx                    # Homepage pubblica
+portfolioJac/
+├── app/                              # routing (obbligatorio qui per Next.js)
+│   ├── layout.tsx
+│   ├── page.tsx                      # redirect a /explore
+│   ├── globals.css
 │   ├── auth/
 │   │   ├── login/page.tsx
-│   │   └── register/page.tsx
+│   │   ├── register/page.tsx
+│   │   ├── forgot-password/page.tsx    # richiedi link di reset
+│   │   └── reset-password/page.tsx     # imposta nuova password (legge ?token&email)
 │   ├── dashboard/
-│   │   └── page.tsx                # Area privata utente
-│   ├── profile/
-│   │   └── [username]/page.tsx     # Profilo pubblico
+│   │   ├── page.tsx                    # area privata utente
+│   │   └── settings/page.tsx           # pannello impostazioni profilo
+│   ├── explore/page.tsx              # esplora profili pubblici
+│   ├── profile/[username]/page.tsx   # profilo pubblico
 │   ├── projects/
-│   │   ├── new/page.tsx            # Wizard nuovo progetto
-│   │   └── [id]/
-│   │       └── edit/page.tsx       # Modifica progetto
+│   │   ├── new/page.tsx               # wizard nuovo progetto (4 step)
+│   │   └── [id]/edit/page.tsx         # modifica progetto (form precompilato, no step)
 │   └── api/
 │       ├── auth/
 │       │   ├── [...nextauth]/route.ts
-│       │   └── register/route.ts
+│       │   ├── register/route.ts
+│       │   ├── forgot-password/route.ts # genera token in VerificationToken
+│       │   └── reset-password/route.ts  # valida token, aggiorna password
 │       ├── projects/
-│       │   ├── route.ts            # GET list, POST create
-│       │   └── [id]/route.ts       # GET, PUT, DELETE
+│       │   ├── route.ts              # GET (lista mie), POST (crea)
+│       │   └── [id]/route.ts         # GET, PUT, DELETE (con controllo ownership)
 │       ├── profile/
-│       │   └── [username]/route.ts # Profilo pubblico
-│       └── uploadthing/
-│           └── route.ts
+│       │   ├── me/route.ts           # GET/PUT profilo utente autenticato
+│       │   └── [username]/route.ts   # GET profilo pubblico + progetti pubblici
+│       └── explore/route.ts          # GET lista profili pubblici (con filtro/paginazione)
 │
-├── components/
-│   ├── ui/                         # Shadcn components
-│   ├── browser-card/
-│   │   ├── BrowserCard.tsx
-│   │   └── BrowserCardMenu.tsx
-│   ├── browser-modal/
-│   │   └── BrowserModal.tsx
-│   ├── profile/
-│   │   ├── ProfileHeader.tsx
-│   │   └── TechBadge.tsx
-│   ├── projects/
-│   │   ├── ProjectWizard.tsx
-│   │   └── UploadDropzone.tsx
-│   └── layout/
-│       ├── Navbar.tsx
-│       └── Footer.tsx
+├── backend/
+│   ├── lib/
+│   │   ├── prisma.ts                 # PrismaClient + adapter-pg
+│   │   └── auth.ts                   # config NextAuth (Credentials + JWT)
+│   └── prisma/
+│       ├── schema.prisma
+│       └── migrations/
 │
-├── lib/
-│   ├── prisma.ts                   # Prisma client singleton
-│   ├── auth.ts                     # NextAuth config
-│   ├── uploadthing.ts              # Uploadthing config
-│   └── utils.ts                   # cn() e altre utility
+├── frontend/
+│   ├── components/
+│   │   ├── browser-card/BrowserCard.tsx
+│   │   ├── browser-modal/BrowserModal.tsx
+│   │   ├── layout/Navbar.tsx
+│   │   └── providers/SessionProvider.tsx
+│   └── lib/
+│       └── utils.ts                  # cn() per merge classi Tailwind
 │
-├── prisma/
-│   ├── schema.prisma
-│   └── seed.ts
-│
-├── middleware.ts                   # Protezione route
-├── .env                            # Variabili d'ambiente (non committare)
-└── .env.example                    # Template variabili
+├── proxy.ts                           # (ex middleware.ts) protegge /dashboard e /projects
+├── prisma.config.ts                  # connection string + path schema per la CLI
+├── next.config.ts                    # serverExternalPackages per pg/Prisma (vedi §7)
+├── .env                              # non committare
+└── .env.example
 ```
+
+Non esistono ancora (vedi roadmap in `docs/changelog.md`): upload immagini reale, OAuth Google.
 
 ---
 
 ## 7. Autenticazione (NextAuth v5)
 
-### Configurazione (`lib/auth.ts`)
+### `backend/lib/auth.ts`
 
 ```typescript
-import NextAuth from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
-import { prisma } from "./prisma"
-import bcrypt from "bcryptjs"
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
+      credentials: { email: {...}, password: {...} },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
-
-        if (!user || !user.password) return null
-
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        )
-
-        return isValid ? user : null
+        const user = await prisma.user.findUnique({ where: { email: ... } })
+        if (!user?.password) return null
+        const isValid = await bcrypt.compare(credentials.password, user.password)
+        return isValid ? { id: user.id, name: user.name, email: user.email, username: user.username, image: user.image } : null
       },
     }),
   ],
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/error",
-  },
+  pages: { signIn: "/auth/login" },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.username = (user as any).username
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.username = token.username as string
-      }
-      return session
-    },
+    // id e username propagati dal token JWT alla session
   },
 })
 ```
 
-### Middleware (`middleware.ts`)
+### `proxy.ts`
+
+Protegge `/dashboard/**` e `/projects/**`: se non autenticato, reindirizza a `/auth/login?callbackUrl=<path originale>`.
+
+> **Attenzione — non rinominarlo in `middleware.ts`.** In Next.js 16 quella convenzione è deprecata e girerebbe sul vecchio runtime **Edge**, che non supporta i driver Node nativi (`pg`) usati da Prisma tramite `@prisma/adapter-pg` — il risultato è un crash silenzioso (`node:util/types` non trovato) non appena `auth()` viene invocato, cioè su ogni richiesta a `/dashboard`/`/projects`. `proxy.ts` invece usa di default il runtime Node.js. Vedi `docs/changelog.md` (Unreleased → Fixed) per i dettagli di quando è stato scoperto.
+
+### Reset password
+
+Non usa NextAuth direttamente: due Route Handler dedicati generano e verificano un token, riusando la tabella `VerificationToken` (pensata da NextAuth per i magic-link via email, qui riadattata):
+
+1. `POST /api/auth/forgot-password` — se l'email esiste ed ha una password (non è solo-OAuth), genera un token con `crypto.randomBytes(32).toString("hex")`, lo salva con scadenza **1 ora**, e cancella eventuali token precedenti per lo stesso indirizzo. La risposta è **sempre generica** (stesso messaggio, esista o meno l'email) per non permettere enumerazione utenti.
+2. `POST /api/auth/reset-password` — verifica che il token esista, appartenga a quell'email e non sia scaduto; se valido, hasha la nuova password (bcrypt, salt 12) e **cancella il token** (uso singolo — un secondo tentativo con lo stesso link fallisce).
+
+**Nessun servizio email è collegato**: il link di reset viene loggato via `console.log` sul server e restituito nella risposta JSON (campo `devResetUrl`), che la pagina `/auth/forgot-password` mostra direttamente all'utente. Per passare a un invio email reale in produzione, sostituire il `console.log` in `app/api/auth/forgot-password/route.ts` con una chiamata a un provider (Resend, Nodemailer+SMTP, ecc.) e rimuovere `devResetUrl` dalla risposta.
+
+### `next.config.ts` — `serverExternalPackages`
 
 ```typescript
-import { auth } from "@/lib/auth"
-
-export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const isProtected = req.nextUrl.pathname.startsWith("/dashboard") ||
-                      req.nextUrl.pathname.startsWith("/projects")
-
-  if (isProtected && !isLoggedIn) {
-    return Response.redirect(new URL("/auth/login", req.nextUrl))
-  }
-})
-
-export const config = {
-  matcher: ["/dashboard/:path*", "/projects/:path*"],
+const nextConfig: NextConfig = {
+  serverExternalPackages: ["pg", "@prisma/client", "@prisma/adapter-pg"],
 }
 ```
+
+Senza questa opzione, **Turbopack** (bundler di default da Next.js 16) prova a impacchettare `pg` dentro le API route invece di trattarlo come dipendenza nativa esterna, fallendo con `Cannot find package 'pg-<hash>'` e restituendo `500` su qualsiasi endpoint che tocchi il database (inclusi login e registrazione). Se in futuro si aggiungono altre dipendenze Node-native (driver di altri DB, librerie con binding nativi), vanno aggiunte qui.
 
 ---
 
 ## 8. API Routes
 
-### `GET /api/projects` — Lista progetti utente autenticato
+| Metodo | Route | Auth | Descrizione |
+|--------|-------|:---:|-------------|
+| POST | `/api/auth/register` | – | Crea utente (valida con Zod, hash bcrypt salt=12, verifica unicità email/username) |
+| GET / POST | `/api/auth/[...nextauth]` | – | Handler NextAuth (login, sessione) |
+| POST | `/api/auth/forgot-password` | – | Genera token di reset (1h, uso singolo), risposta sempre generica (no user enumeration) |
+| POST | `/api/auth/reset-password` | – | Verifica token + email, aggiorna password, invalida il token |
+| GET | `/api/projects` | ✓ | Lista progetti dell'utente autenticato |
+| POST | `/api/projects` | ✓ | Crea progetto (Zod valida titolo, url, tech stack max 10) |
+| GET/PUT/DELETE | `/api/projects/[id]` | ✓ | Dettaglio/aggiorna/elimina — verifica ownership (403 se non tuo) |
+| GET | `/api/profile/me` | ✓ | Dati profilo utente autenticato |
+| PUT | `/api/profile/me` | ✓ | Aggiorna bio/immagine/link social/tech stack/visibilità (Zod) |
+| DELETE | `/api/profile/me` | ✓ | Elimina definitivamente l'account (cascade su Project/Account/Session via schema Prisma) |
+| GET | `/api/profile/[username]` | – | Profilo pubblico + soli progetti pubblici (404 se profilo privato/inesistente) |
+| GET | `/api/explore` | – | Lista profili pubblici con progetti pubblici, filtro `?tech=`, paginazione `?page=` |
 
-```typescript
-// app/api/projects/route.ts
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+Specifica completa request/response in `docs/architettura-sistema.md`.
 
-export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 })
-
-  const projects = await prisma.project.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-  })
-
-  return Response.json(projects)
-}
-```
-
-### `POST /api/projects` — Crea progetto
-
-```typescript
-export async function POST(req: Request) {
-  const session = await auth()
-  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 })
-
-  const body = await req.json()
-  const { title, description, screenshotUrl, projectUrl,
-          techStack, category, isPublic, fakeData } = body
-
-  const project = await prisma.project.create({
-    data: {
-      title,
-      description,
-      screenshotUrl,
-      projectUrl,
-      techStack,
-      category,
-      isPublic: isPublic ?? false,
-      fakeData,
-      userId: session.user.id,
-    },
-  })
-
-  return Response.json(project, { status: 201 })
-}
-```
-
-### `PUT /api/projects/[id]` — Aggiorna progetto (verifica ownership)
-
-```typescript
-// app/api/projects/[id]/route.ts
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const session = await auth()
-  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 })
-
-  const existing = await prisma.project.findUnique({ where: { id: params.id } })
-  if (!existing || existing.userId !== session.user.id) {
-    return new Response("Forbidden", { status: 403 })
-  }
-
-  const body = await req.json()
-  const updated = await prisma.project.update({
-    where: { id: params.id },
-    data: body,
-  })
-
-  return Response.json(updated)
-}
-```
+Convenzione errori: sempre `{ error: string }` col relativo status code (400 validazione, 401 non autenticato, 403 non proprietario, 404 non trovato, 500 generico).
 
 ---
 
-## 9. Componente BrowserCard
+## 9. Componenti principali (`frontend/components/`)
 
-```typescript
-// components/browser-card/BrowserCard.tsx
-"use client"
-
-import { motion } from "framer-motion"
-import Image from "next/image"
-
-interface BrowserCardProps {
-  project: {
-    id: string
-    title: string
-    screenshotUrl: string | null
-    techStack: string[]
-    projectUrl: string | null
-  }
-  onClick: () => void
-}
-
-export function BrowserCard({ project, onClick }: BrowserCardProps) {
-  return (
-    <motion.div
-      className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 cursor-pointer bg-white dark:bg-zinc-900 shadow-sm"
-      whileHover={{ scale: 1.03, boxShadow: "0 20px 40px rgba(0,0,0,0.12)" }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-    >
-      {/* Barra browser */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
-        <div className="flex gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-red-400" />
-          <span className="w-3 h-3 rounded-full bg-yellow-400" />
-          <span className="w-3 h-3 rounded-full bg-green-400" />
-        </div>
-        <div className="flex-1 bg-white dark:bg-zinc-700 rounded-md px-3 py-1 text-xs text-zinc-400 truncate">
-          {project.projectUrl ?? "localhost:3000"}
-        </div>
-      </div>
-
-      {/* Screenshot */}
-      <div className="relative w-full aspect-video bg-zinc-50 dark:bg-zinc-950">
-        {project.screenshotUrl ? (
-          <Image
-            src={project.screenshotUrl}
-            alt={project.title}
-            fill
-            className="object-cover object-top"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-zinc-300 text-sm">
-            Nessuna anteprima
-          </div>
-        )}
-      </div>
-
-      {/* Footer card */}
-      <div className="p-3">
-        <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-          {project.title}
-        </p>
-        <div className="flex flex-wrap gap-1 mt-1">
-          {project.techStack.slice(0, 3).map((tech) => (
-            <span
-              key={tech}
-              className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-```
+- **`BrowserCard`** — miniatura progetto stile finestra browser; prop `showMenu` attiva il menu ⋮ (Modifica/Rendi pubblico-privato/Copia link/Elimina), usato in dashboard e non nel profilo pubblico.
+- **`BrowserModal`** — overlay a schermo intero con animazione (Framer Motion), mostra lo screenshot e il banner "dati fittizi" se `project.fakeData` è `true`.
+- **`Navbar`** — barra di navigazione globale (`app/layout.tsx`).
+- **`SessionProvider`** — wrapper client-side del `SessionProvider` di NextAuth, necessario perché `useSession()` funzioni nei Client Component.
 
 ---
 
-## 10. Componente BrowserModal
+## 10. Upload immagini
 
-```typescript
-// components/browser-modal/BrowserModal.tsx
-"use client"
-
-import { motion, AnimatePresence } from "framer-motion"
-import { X, ArrowLeft, ArrowRight, RotateCcw, ExternalLink } from "lucide-react"
-import Image from "next/image"
-
-interface BrowserModalProps {
-  project: {
-    title: string
-    screenshotUrl: string | null
-    projectUrl: string | null
-    fakeData: any
-  } | null
-  onClose: () => void
-}
-
-export function BrowserModal({ project, onClose }: BrowserModalProps) {
-  return (
-    <AnimatePresence>
-      {project && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.div
-            className="w-full max-w-5xl rounded-xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-900"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Barra browser completa */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
-              <div className="flex gap-1.5">
-                <button onClick={onClose} className="w-3 h-3 rounded-full bg-red-400 hover:bg-red-500" />
-                <span className="w-3 h-3 rounded-full bg-yellow-400" />
-                <span className="w-3 h-3 rounded-full bg-green-400" />
-              </div>
-              <div className="flex items-center gap-2 text-zinc-400">
-                <ArrowLeft size={14} />
-                <ArrowRight size={14} />
-                <RotateCcw size={14} />
-              </div>
-              <div className="flex-1 bg-white dark:bg-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-500 truncate">
-                {project.projectUrl ?? `https://${project.title.toLowerCase().replace(/\s/g, "-")}.vercel.app`}
-              </div>
-              {project.projectUrl && (
-                <a href={project.projectUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink size={14} className="text-zinc-400 hover:text-zinc-600" />
-                </a>
-              )}
-              <button onClick={onClose}>
-                <X size={16} className="text-zinc-400 hover:text-zinc-600" />
-              </button>
-            </div>
-
-            {/* Banner privacy */}
-            {project.fakeData && (
-              <div className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs text-center py-1.5">
-                I dati mostrati in questa anteprima sono fittizi e non rappresentano dati reali
-              </div>
-            )}
-
-            {/* Screenshot */}
-            <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-              {project.screenshotUrl ? (
-                <Image
-                  src={project.screenshotUrl}
-                  alt={project.title}
-                  fill
-                  className="object-cover object-top"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full bg-zinc-50 dark:bg-zinc-950 text-zinc-400">
-                  Nessuna anteprima disponibile
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-```
+Non ancora integrato con un servizio reale: il wizard `/projects/new` accetta solo un **URL di un'immagine già online**, incollato dall'utente. `uploadthing` è tra le dipendenze e le chiavi sono previste in `.env.example`, ma manca la route `app/api/uploadthing` e la configurazione (`ourFileRouter`) — è il prossimo passo naturale per abilitare il drag & drop reale mostrato (ma non funzionante) nello step 2 del wizard.
 
 ---
 
-## 11. Upload con Uploadthing
-
-### Configurazione (`lib/uploadthing.ts`)
-
-```typescript
-import { createUploadthing, type FileRouter } from "uploadthing/next"
-import { auth } from "./auth"
-
-const f = createUploadthing()
-
-export const ourFileRouter = {
-  projectScreenshot: f({ image: { maxFileSize: "5MB", maxFileCount: 1 } })
-    .middleware(async () => {
-      const session = await auth()
-      if (!session?.user?.id) throw new Error("Unauthorized")
-      return { userId: session.user.id }
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return { url: file.url }
-    }),
-
-  userAvatar: f({ image: { maxFileSize: "2MB", maxFileCount: 1 } })
-    .middleware(async () => {
-      const session = await auth()
-      if (!session?.user?.id) throw new Error("Unauthorized")
-      return { userId: session.user.id }
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return { url: file.url }
-    }),
-} satisfies FileRouter
-
-export type OurFileRouter = typeof ourFileRouter
-```
-
----
-
-## 12. Script npm disponibili
+## 11. Script disponibili
 
 | Comando | Descrizione |
 |---------|-------------|
-| `npm run dev` | Avvia server di sviluppo su porta 3000 |
+| `npm run dev` | Server di sviluppo (Turbopack) |
 | `npm run build` | Build di produzione |
-| `npm run start` | Avvia server di produzione |
-| `npm run lint` | ESLint check |
-| `npx prisma studio` | GUI per esplorare il DB |
-| `npx prisma migrate dev` | Applica nuove migrazioni |
-| `npx prisma generate` | Rigenera Prisma client |
-| `npx prisma db seed` | Popola il DB con dati di test |
+| `npm run start` | Avvia il build di produzione |
+| `npm run lint` | ESLint (config `eslint-config-next`) |
+| `npx prisma migrate dev` | Crea/applica una migration dopo modifiche allo schema |
+| `npx prisma generate` | Rigenera il Prisma Client |
+| `npx prisma studio` | GUI per esplorare/modificare i dati nel browser |
+
+Non esiste ancora uno script di seed (`prisma db seed`) — il DB si popola manualmente via UI o Prisma Studio/TablePlus.
 
 ---
 
-## 13. Deploy su Vercel + Neon
+## 12. Deploy
 
-### 1. Database (Neon)
-1. Crea un account su [neon.tech](https://neon.tech)
-2. Crea un nuovo progetto → copia la connection string
-3. Incollala come `DATABASE_URL` nelle env di Vercel
+Non ancora configurato in questo repo (nessuna pipeline CI/CD, nessun target di deploy impostato). Percorso previsto, coerente con lo stack:
 
-### 2. Uploadthing
-1. Crea un'app su [uploadthing.com](https://uploadthing.com)
-2. Copia `UPLOADTHING_SECRET` e `UPLOADTHING_APP_ID`
+1. **Database**: Postgres gestito (es. Neon o Supabase) al posto del container Docker locale — basta puntare `DATABASE_URL` alla connection string di produzione.
+2. **App**: Vercel (build command `npm run build`, framework Next.js riconosciuto automaticamente).
+3. **Migration in produzione**: `DATABASE_URL="<prod>" npx prisma migrate deploy` (non `migrate dev`, che è pensato solo per lo sviluppo).
 
-### 3. Vercel
-1. Importa il repository su Vercel
-2. Aggiungi tutte le variabili d'ambiente
-3. Deploy — Vercel eseguirà `npm run build` automaticamente
-
-### 4. Prima migrazione in produzione
-```bash
-DATABASE_URL="tua-connection-string-neon" npx prisma migrate deploy
-```
+Dettagli su pipeline e ambienti in `docs/versioning-e-workflow.md` (quando disponibile).
 
 ---
 
-## 14. Convenzioni di codice
+## 13. Convenzioni di codice
 
-- **TypeScript strict mode** abilitato
-- **Server Components** per default; `"use client"` solo dove necessario
-- Fetch dati direttamente nei Server Components con Prisma (no API layer inutile lato client)
-- Validazione input sempre con **Zod** sia client che server side
-- Gestione errori API: sempre rispondere con status code appropriato e body JSON `{ error: string }`
-- Nomi file componenti: **PascalCase** (`BrowserCard.tsx`)
-- Nomi file utility/config: **camelCase** (`prisma.ts`)
+- TypeScript strict mode abilitato
+- Server/Client Component: `"use client"` solo dove serve interattività (form, hook di stato, `useSession`)
+- Validazione input sempre con **Zod** nelle API route
+- Risposte API sempre `NextResponse.json(...)`, errori sempre `{ error: string }`
+- Nomi file componenti: **PascalCase** (`BrowserCard.tsx`); nomi file utility/config: **camelCase** (`prisma.ts`)
+- Regola di dipendenza tra cartelle: `frontend/` non importa mai da `backend/` e viceversa — la connessione tra i due avviene solo dentro `app/` (vedi `backend/README.md` e `frontend/README.md`)

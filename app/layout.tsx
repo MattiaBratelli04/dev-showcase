@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
 import "./globals.css"
-import { Navbar } from "@/components/layout/Navbar"
-import { SessionProvider } from "@/components/providers/SessionProvider"
+import { Navbar } from "@/frontend/components/layout/Navbar"
+import { SessionProvider } from "@/frontend/components/providers/SessionProvider"
 
 const geist = Geist({ subsets: ["latin"] })
 

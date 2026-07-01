@@ -35,6 +35,12 @@ export function Navbar() {
               >
                 Profilo
               </Link>
+              <Link
+                href="/dashboard/settings"
+                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+              >
+                Impostazioni
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-red-500 transition-colors"
@@ -74,6 +80,7 @@ export function Navbar() {
             <>
               <Link href="/dashboard" className="text-sm" onClick={() => setOpen(false)}>Dashboard</Link>
               <Link href={`/profile/${(session.user as any).username}`} className="text-sm" onClick={() => setOpen(false)}>Profilo</Link>
+              <Link href="/dashboard/settings" className="text-sm" onClick={() => setOpen(false)}>Impostazioni</Link>
               <button onClick={() => signOut({ callbackUrl: "/" })} className="text-sm text-left text-red-500">Esci</button>
             </>
           ) : (

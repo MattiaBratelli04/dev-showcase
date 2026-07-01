@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { auth } from "@/backend/lib/auth"
+import { prisma } from "@/backend/lib/prisma"
 import { z } from "zod"
 
 const updateSchema = z.object({
@@ -80,4 +80,18 @@ export async function PUT(req: NextRequest) {
     }
     return NextResponse.json({ error: "Errore del server" }, { status: 500 })
   }
+}
+
+export async function DELETE() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non autorizzato" }, { status: 401 })
+  }
+
+  // Cancellazione definitiva e irreversibile (conformità GDPR, diritto alla
+  // cancellazione). Project, Account e Session hanno onDelete: Cascade sullo
+  // schema, quindi vengono rimossi automaticamente insieme all'utente.
+  await prisma.user.delete({ where: { id: session.user.id } })
+
+  return NextResponse.json({ success: true })
 }

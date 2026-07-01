@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import { Globe, ExternalLink, GitBranch, Link2 } from "lucide-react"
-import { BrowserCard, type Project } from "@/components/browser-card/BrowserCard"
-import { BrowserModal } from "@/components/browser-modal/BrowserModal"
+import { BrowserCard, type Project } from "@/frontend/components/browser-card/BrowserCard"
+import { BrowserModal } from "@/frontend/components/browser-modal/BrowserModal"
 
 interface UserProfile {
   id: string

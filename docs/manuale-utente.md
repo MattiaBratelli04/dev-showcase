@@ -12,114 +12,120 @@ DevShelf è un sito web che ti permette di raccogliere tutti i tuoi progetti in 
 
 ### Creare un account
 
-1. Vai sul sito di DevShelf.
-2. Clicca sul pulsante **"Inizia gratis"** al centro della pagina.
-3. Compila il modulo che appare:
-   - **Nome completo** — il tuo nome e cognome
-   - **Username** — il soprannome con cui apparirai sul sito (es. `marco_dev`). Sceglilo bene perché farà parte del tuo indirizzo personale.
-   - **Email** — la tua email, servirà per accedere
-   - **Password** — scegli una password sicura di almeno 8 caratteri
-4. Clicca **"Crea account"**.
-5. Sei dentro! Verrai portato direttamente alla tua area personale.
-
----
+1. Vai su `/auth/register`.
+2. Compila il modulo:
+   - **Nome completo**
+   - **Username** — il soprannome con cui apparirai sul sito (es. `marco_dev`). Farà parte del tuo indirizzo pubblico (`/profile/marco_dev`), quindi scegli con cura: deve essere unico.
+   - **Email** — deve essere unica, servirà per accedere
+   - **Password**
+3. Al termine della registrazione vieni autenticato automaticamente e portato in dashboard.
 
 ### Accedere se hai già un account
 
-1. Clicca su **"Accedi"** in alto a destra.
-2. Inserisci la tua email e la tua password.
-3. Clicca **"Entra"**.
+1. Vai su `/auth/login`.
+2. Inserisci email e password.
+3. Conferma per entrare nella dashboard.
 
-Se hai dimenticato la password, clicca su **"Password dimenticata?"** e segui le istruzioni che ti arrivano via email.
+### Password dimenticata
 
----
-
-## Personalizzare il tuo profilo
-
-Appena entri, prima di aggiungere progetti, ti consigliamo di completare il tuo profilo. Così chi visita la tua pagina sa subito chi sei.
-
-1. Clicca sulla tua **foto profilo** in alto a destra.
-2. Scegli **"Impostazioni profilo"**.
-3. Puoi modificare:
-   - **Foto profilo** — carica una tua foto cliccando sull'immagine
-   - **Bio** — scrivi due righe su di te, max 300 caratteri
-   - **GitHub, LinkedIn, sito web** — incolla i link ai tuoi profili se vuoi mostrarli
-   - **Tecnologie che conosci** — scrivi il nome di una tecnologia (es. "Python") e premi Invio. Apparirà come un'etichetta colorata sul tuo profilo.
-4. Clicca **"Salva"** quando hai finito.
+1. Dalla pagina di login, clicca **"Password dimenticata?"**.
+2. Inserisci la tua email e clicca **"Invia link di reset"**.
+3. Per motivi di privacy, il messaggio di conferma è sempre lo stesso sia che l'email esista sia che non esista (così nessuno può scoprire quali indirizzi sono registrati).
+4. **Nota per l'ambiente di sviluppo/demo attuale:** non essendo collegato nessun servizio email reale, il link di reset viene mostrato direttamente in pagina (e loggato nella console del server) invece di essere inviato via email. In produzione questo passaggio verrebbe sostituito da un vero invio email.
+5. Apri il link, scegli la nuova password (minimo 8 caratteri) e confermala.
+6. Il link è valido **un'ora** ed è **utilizzabile una sola volta**: dopo averlo usato (o se scade) va richiesto uno nuovo.
+7. Dopo il reset vieni reindirizzato al login, dove puoi accedere con la nuova password.
 
 ---
 
 ## Aggiungere un progetto
 
-1. Dalla tua area personale, clicca il pulsante **"+"** in basso a destra oppure **"Aggiungi progetto"** in alto.
-2. Si apre un modulo in 4 passi. In alto vedrai una barra che mostra a che punto sei.
+1. Dalla dashboard, clicca **"Aggiungi progetto"** (o il pulsante **+** in basso a destra su mobile).
+2. Compila il wizard in 4 passi (una barra di progresso in alto mostra a che punto sei):
 
-**Passo 1 — Informazioni base**
-- Scrivi il nome del progetto.
-- Scrivi una breve descrizione: cos'è, a cosa serve.
-- Scegli una categoria dal menu (es. "Sito web", "App mobile", ecc.).
-- Clicca **"Avanti"**.
+**Passo 1 — Info base**
+- Titolo (obbligatorio)
+- Descrizione (facoltativa, max 500 caratteri)
+- Categoria: Web App, App Mobile, API / Backend, Design System, Tool / Script, Altro
 
 **Passo 2 — Screenshot**
-- Carica un'immagine del tuo progetto. Puoi trascinarla nella zona indicata oppure cliccare per cercarla sul tuo computer.
-- Si accettano immagini JPG, PNG o WebP, fino a 5MB.
-- Vedrai subito un'anteprima.
-- Clicca **"Avanti"**.
+- Incolla l'URL di un'immagine già ospitata online (JPG/PNG/WebP). Vedrai subito un'anteprima.
+- *Nota: il drag & drop con upload diretto del file non è ancora attivo — per ora serve un URL.*
 
-**Passo 3 — Tecnologie usate**
-- Scrivi le tecnologie che hai usato per costruire il progetto (es. "React", "Python", "WordPress") e premi Invio per aggiungerle una alla volta.
-- Per rimuoverne una, clicca la **X** accanto al suo nome.
-- Clicca **"Avanti"**.
+**Passo 3 — Tecnologie**
+- Scrivi una tecnologia e premi Invio per aggiungerla come etichetta (fino a 10). Clicca la **X** su un'etichetta per rimuoverla.
 
-**Passo 4 — Ultimi dettagli**
-- **Link al progetto** *(facoltativo)*: se il progetto è online, incolla qui l'indirizzo web.
-- **Visibilità**: scegli se vuoi che il progetto sia visibile a tutti oppure solo a te.
-- **Dati fittizi**: se nello screenshot appaiono dati personali (nomi, email, numeri di telefono), attiva questa opzione. Verrà mostrato un avviso ai visitatori che quei dati non sono reali.
-- Clicca **"Pubblica progetto"**.
-
-Il progetto apparirà subito nella tua area personale come una piccola scheda browser.
+**Passo 4 — Dettagli finali**
+- **URL del progetto** *(facoltativo)*: se il progetto è online, incolla qui l'indirizzo reale.
+- **Rendi pubblico**: se attivo, il progetto compare sul tuo profilo pubblico; altrimenti resta visibile solo a te in dashboard.
+- **Attiva avviso dati fittizi**: mostra ai visitatori un banner "Dati fittizi" sullo screenshot, utile se l'immagine contiene dati sensibili non reali.
+3. Clicca **"Pubblica progetto 🚀"**. Il progetto compare subito in dashboard come Browser Card.
 
 ---
 
 ## Gestire i tuoi progetti
 
-Nella tua area personale vedi tutte le tue schede progetto. Su ognuna, in alto a destra, c'è un piccolo pulsante con **tre puntini (⋮)**. Cliccalo per:
+Su ogni Browser Card in dashboard, l'icona **⋮** apre un menu con:
 
-- **Modifica** — cambia titolo, descrizione, screenshot o qualsiasi altro dettaglio
-- **Elimina** — cancella il progetto (ti verrà chiesta conferma prima)
-- **Copia link** — copia l'indirizzo diretto al progetto per condividerlo
-- **Rendi pubblico / privato** — cambia rapidamente la visibilità senza dover aprire tutto il modulo
+- **Modifica** — apre la pagina di modifica del progetto, con lo stesso form del wizard di creazione (senza gli step: tutti i campi su un'unica pagina) precompilato con i dati esistenti
+- **Rendi pubblico / Rendi privato** — cambia la visibilità con un click, senza riaprire il modulo
+- **Copia link** — copia negli appunti il link diretto al progetto
+- **Elimina** — rimuove il progetto (ti viene chiesta conferma prima)
+
+Ogni card mostra anche un'etichetta **Pubblico**/**Privato** in alto a sinistra, per capire a colpo d'occhio la visibilità.
 
 ---
 
 ## Aprire un progetto
 
-Clicca su una qualsiasi scheda e si aprirà una finestra grande che simula un browser vero. Vedrai lo screenshot del progetto come se ci stessi navigando dentro.
+Clicca su una Browser Card (fuori dal menu ⋮) per aprire il **Browser Modal**: una finestra a schermo intero che mostra lo screenshot come se stessi navigando nel progetto vero, con tanto di barra indirizzi finta.
 
-Per chiuderla puoi:
-- Cliccare la **X** in alto a destra
-- Premere il tasto **Esc** sulla tastiera
-- Cliccare sullo sfondo scuro fuori dalla finestra
-
-Se l'utente ha inserito il link al progetto reale, troverai un pulsante **"Apri progetto"** che lo apre in una nuova scheda del browser.
+- Se hai attivato "dati fittizi", vedrai il banner di avviso.
+- Se hai inserito un URL del progetto reale, un'icona di collegamento esterno ti permette di aprirlo in una nuova scheda.
+- Per chiudere: clicca la **X**, oppure clicca fuori dalla finestra (sullo sfondo scuro).
 
 ---
 
 ## La tua pagina pubblica
 
-Hai una pagina personale accessibile da chiunque, all'indirizzo:
+Hai una pagina personale raggiungibile da chiunque su:
 
-**devshelf.io/profile/tuousername**
+**`/profile/<tuo-username>`**
 
-Su questa pagina i visitatori vedono la tua foto, bio, link social e tutti i progetti che hai impostato come pubblici.
+Mostra la tua foto profilo, bio, link social (GitHub, LinkedIn, sito), le etichette delle tue tecnologie e la griglia dei soli progetti impostati come **pubblici**. È possibile filtrare i progetti mostrati per tecnologia.
 
-Per vedere come appare la tua pagina, clicca su **"Il mio profilo"** dalla tua area personale.
+Se il tuo profilo non è impostato come pubblico, la pagina restituisce "Profilo non trovato" ai visitatori.
 
 ---
 
-## Sfogliare i profili degli altri
+## Impostazioni profilo
 
-Dalla homepage, nella sezione **"Sviluppatori in evidenza"**, puoi vedere i profili di altri utenti. Clicca su un nome per visitarne la pagina e vedere i loro progetti.
+Da **Impostazioni** (link in alto nella barra di navigazione, o "Impostazioni profilo" dalla dashboard) puoi modificare:
+
+- **Nome completo** e **Bio** (max 300 caratteri)
+- **URL foto profilo** (incolla il link di un'immagine già online, non c'è ancora upload diretto)
+- **Link social**: GitHub, LinkedIn, sito web
+- **Tecnologie che conosci**: stesso tag-input del wizard progetti, fino a 20 etichette
+- **Profilo pubblico**: se disattivato, la tua pagina `/profile/<username>` non è più raggiungibile dai visitatori (stesso comportamento del "Privato" sui singoli progetti, ma a livello di intero profilo)
+
+Username ed email sono mostrati per riferimento ma non modificabili da questa pagina. Le modifiche si salvano cliccando **"Salva modifiche"** e restano effettive anche dopo un ricaricamento della pagina (salvate nel database, non solo nel browser).
+
+### Eliminare l'account
+
+In fondo alla pagina Impostazioni trovi la **"Zona pericolosa"**. L'eliminazione è **definitiva e irreversibile**: cancella subito il tuo profilo, tutti i tuoi progetti e le tue sessioni attive — non c'è modo di recuperarli in seguito.
+
+Per procedere:
+1. Scrivi il tuo username esatto nel campo di conferma (il pulsante resta disattivato finché non corrisponde)
+2. Clicca **"Elimina account definitivamente"**
+3. Conferma un'ultima volta nella finestra di dialogo del browser
+
+Dopo l'eliminazione vieni disconnesso automaticamente e riportato alla homepage.
+
+---
+
+## Sfogliare i profili degli altri (Esplora)
+
+Dalla pagina **Esplora** (`/explore`) puoi sfogliare tutti i profili pubblici che hanno almeno un progetto pubblico, con ricerca e filtro per tecnologia. Ogni risultato mostra nome, username, bio, tech stack e il numero di progetti pubblici.
 
 ---
 
@@ -129,10 +135,13 @@ Dalla homepage, nella sezione **"Sviluppatori in evidenza"**, puoi vedere i prof
 Sì, non c'è nessun limite.
 
 **Cosa succede se cambio il mio username?**
-Il tuo indirizzo pubblico cambia. Se hai condiviso il vecchio link da qualche parte, non funzionerà più.
+Al momento non è possibile cambiarlo dall'interfaccia una volta creato l'account.
 
 **Posso avere progetti che solo io vedo?**
-Sì. Basta impostare il progetto come "Privato" e non apparirà sulla tua pagina pubblica.
+Sì. Lascia disattivata l'opzione "Rendi pubblico" in fase di creazione, oppure disattivala in seguito dal menu ⋮ della card.
+
+**Posso recuperare la password se la dimentico?**
+Sì, dalla pagina di login clicca "Password dimenticata?" (vedi sezione dedicata sopra). In questo ambiente di sviluppo il link non arriva per email ma viene mostrato direttamente a video.
 
 **Come faccio a eliminare il mio account?**
-Vai su Impostazioni profilo, scorri fino in fondo e clicca su **"Elimina account"**. Attenzione: l'operazione è definitiva e cancellerà tutto.
+Da Impostazioni → Zona pericolosa (vedi sezione dedicata sopra). L'operazione è immediata e irreversibile.

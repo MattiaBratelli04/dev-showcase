@@ -1,0 +1,439 @@
+openapi: 3.0.3
+info:
+  title: DevShelf API
+  description: >
+    API REST di DevShelf, esposta tramite Route Handler di Next.js
+    (app/api/**). Le route protette richiedono una sessione NextAuth
+    valida (cookie di sessione, gestito automaticamente dal browser).
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3000
+    description: Sviluppo locale
+tags:
+  - name: auth
+  - name: projects
+  - name: profile
+  - name: explore
+
+paths:
+  /api/auth/register:
+    post:
+      tags: [auth]
+      summary: Registra un nuovo utente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, username, email, password]
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 20
+                  pattern: '^[a-zA-Z0-9_]+$'
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "201":
+          description: Utente creato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  username: { type: string }
+                  email: { type: string }
+        "400":
+          description: Validazione fallita o email/username già in uso
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/auth/forgot-password:
+    post:
+      tags: [auth]
+      summary: Richiede un link per reimpostare la password
+      description: >
+        Risponde sempre con lo stesso messaggio generico, esista o meno
+        l'email, per non permettere l'enumerazione degli utenti registrati.
+        Nessun servizio email è collegato: se l'utente esiste, il link viene
+        restituito nel campo `devResetUrl` invece di essere inviato via email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Richiesta accettata (indipendentemente dall'esistenza dell'email)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  devResetUrl:
+                    type: string
+                    nullable: true
+                    description: Presente solo se l'email corrisponde a un utente esistente
+        "400":
+          description: Validazione fallita
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/auth/reset-password:
+    post:
+      tags: [auth]
+      summary: Reimposta la password usando un token di reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, password]
+              properties:
+                email: { type: string, format: email }
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Password aggiornata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        "400":
+          description: Token mancante, non valido, non corrispondente all'email o scaduto
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/projects:
+    get:
+      tags: [projects]
+      summary: Lista i progetti dell'utente autenticato
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Lista progetti
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Project" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [projects]
+      summary: Crea un nuovo progetto
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectInput" }
+      responses:
+        "201":
+          description: Progetto creato
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400":
+          description: Validazione fallita
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/projects/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [projects]
+      summary: Dettaglio di un progetto (solo proprietario)
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Progetto
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [projects]
+      summary: Aggiorna un progetto (solo proprietario)
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectInput" }
+      responses:
+        "200":
+          description: Progetto aggiornato
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [projects]
+      summary: Elimina un progetto (solo proprietario)
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Eliminato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/profile/me:
+    get:
+      tags: [profile]
+      summary: Profilo dell'utente autenticato
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Profilo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [profile]
+      summary: Aggiorna il profilo dell'utente autenticato
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 2 }
+                bio: { type: string, maxLength: 300 }
+                image: { type: string, format: uri }
+                githubUrl: { type: string, format: uri }
+                linkedinUrl: { type: string, format: uri }
+                websiteUrl: { type: string, format: uri }
+                techStack:
+                  type: array
+                  items: { type: string }
+                  maxItems: 20
+                isPublic: { type: boolean }
+      responses:
+        "200":
+          description: Profilo aggiornato
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserProfile" }
+        "400":
+          description: Validazione fallita
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      tags: [profile]
+      summary: Elimina definitivamente l'account dell'utente autenticato
+      description: >
+        Operazione irreversibile. Elimina l'utente e, in cascata (schema
+        Prisma `onDelete: Cascade`), tutti i suoi Project, Account e Session.
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: Account eliminato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/profile/{username}:
+    parameters:
+      - name: username
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [profile]
+      summary: Profilo pubblico + progetti pubblici
+      responses:
+        "200":
+          description: Profilo pubblico
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/UserProfile"
+                  - type: object
+                    properties:
+                      projects:
+                        type: array
+                        items: { $ref: "#/components/schemas/Project" }
+        "404":
+          description: Profilo non trovato o non pubblico
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/explore:
+    get:
+      tags: [explore]
+      summary: Lista profili pubblici con almeno un progetto pubblico
+      parameters:
+        - name: tech
+          in: query
+          required: false
+          schema: { type: string }
+          description: Filtra per tecnologia presente nei progetti pubblici
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, default: 1 }
+      responses:
+        "200":
+          description: Risultati paginati
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserCard" }
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer, example: 12 }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: authjs.session-token
+      description: Cookie di sessione JWT impostato da NextAuth dopo il login
+
+  responses:
+    Unauthorized:
+      description: Utente non autenticato
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Autenticato ma non proprietario della risorsa
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Risorsa non trovata
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    ProjectInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 100 }
+        description: { type: string, maxLength: 500 }
+        screenshotUrl: { type: string, format: uri }
+        projectUrl: { type: string, format: uri }
+        techStack:
+          type: array
+          items: { type: string }
+          maxItems: 10
+        category: { type: string }
+        isPublic: { type: boolean, default: false }
+        fakeData: { type: boolean, default: false }
+
+    Project:
+      allOf:
+        - $ref: "#/components/schemas/ProjectInput"
+        - type: object
+          properties:
+            id: { type: string }
+            fakeDataItems:
+              type: object
+              nullable: true
+            userId: { type: string }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    UserProfile:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        username: { type: string }
+        bio: { type: string, nullable: true }
+        image: { type: string, nullable: true }
+        githubUrl: { type: string, nullable: true }
+        linkedinUrl: { type: string, nullable: true }
+        websiteUrl: { type: string, nullable: true }
+        techStack:
+          type: array
+          items: { type: string }
+        isPublic: { type: boolean }
+
+    UserCard:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        username: { type: string }
+        bio: { type: string, nullable: true }
+        image: { type: string, nullable: true }
+        techStack:
+          type: array
+          items: { type: string }
+        _count:
+          type: object
+          properties:
+            projects: { type: integer }
+        projects:
+          type: array
+          maxItems: 1
+          items:
+            type: object
+            properties:
+              screenshotUrl: { type: string, nullable: true }
+              title: { type: string }

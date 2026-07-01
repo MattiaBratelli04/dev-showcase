@@ -109,6 +109,7 @@ export function BrowserCard({
         {showMenu && (
           <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
+              aria-label="Menu progetto"
               className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"
               onClick={() => setMenuOpen((v) => !v)}
             >

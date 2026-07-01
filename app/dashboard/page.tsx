@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, Globe, Lock, ExternalLink } from "lucide-react"
-import { BrowserCard, type Project } from "@/components/browser-card/BrowserCard"
-import { BrowserModal } from "@/components/browser-modal/BrowserModal"
+import { BrowserCard, type Project } from "@/frontend/components/browser-card/BrowserCard"
+import { BrowserModal } from "@/frontend/components/browser-modal/BrowserModal"
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
@@ -83,6 +83,12 @@ export default function DashboardPage() {
                 <ExternalLink size={11} />
               </Link>
             )}
+            <Link
+              href="/dashboard/settings"
+              className="text-xs text-violet-600 hover:underline"
+            >
+              Impostazioni profilo
+            </Link>
           </div>
         </div>
         <Link

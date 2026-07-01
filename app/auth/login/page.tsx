@@ -1,11 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
@@ -66,7 +74,9 @@ export default function LoginPage() {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
-              <span className="text-xs text-violet-600 cursor-pointer hover:underline">Password dimenticata?</span>
+              <Link href="/auth/forgot-password" className="text-xs text-violet-600 hover:underline">
+                Password dimenticata?
+              </Link>
             </div>
             <input
               type="password"

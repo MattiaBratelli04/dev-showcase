@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, ArrowLeft, ArrowRight, RotateCcw, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { useEffect } from "react"
-import type { Project } from "@/components/browser-card/BrowserCard"
+import type { Project } from "@/frontend/components/browser-card/BrowserCard"
 
 interface BrowserModalProps {
   project: Project | null
